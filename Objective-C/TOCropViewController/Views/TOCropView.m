@@ -30,7 +30,7 @@ static const CGFloat kTOCropViewPadding = 14.0f;
 static const NSTimeInterval kTOCropTimerDuration = 0.8f;
 static const CGFloat kTOCropViewMinimumBoxSize = 42.0f;
 static const CGFloat kTOMaximumZoomScale = 15.0f;
-
+static const NSNotificationName kDidFinishEditingNotification = @"didFinishEditingNotification";
 /* When the user taps down to resize the box, this state is used
  to determine where they tapped and how to manipulate the box */
 typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
@@ -1252,7 +1252,11 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     BOOL hidden = !_editing;
     if (self.alwaysShowCroppingGrid) { hidden = NO; } // Override this if the user requires
     [self.gridOverlayView setGridHidden:hidden animated:animated];
-    
+
+    if (!editing) {
+        [[NSNotificationCenter defaultCenter] postNotificationName: kDidFinishEditingNotification object: nil];
+    }
+
     if (resetCropbox) {
         [self moveCroppedContentToCenterAnimated:animated];
         [self captureStateForImageRotation];
@@ -1270,7 +1274,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     if (self.croppingStyle == TOCropViewCroppingStyleCircular) {
         delay = 0.0f;
     }
-    
+
     [UIView animateKeyframesWithDuration:duration delay:delay options:0 animations:^{
         [self toggleTranslucencyViewVisible:!editing];
     } completion:nil];
@@ -1497,16 +1501,21 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     if (animated == NO) {
         translateBlock();
+        [[NSNotificationCenter defaultCenter] postNotificationName: kDidFinishEditingNotification object:nil];
         return;
     }
-    
+
+    void (^completionBlock)(BOOL) = ^(BOOL didComplete) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:kDidFinishEditingNotification object:nil];
+    };
+
     [UIView animateWithDuration:0.5f
                           delay:0.0
          usingSpringWithDamping:1.0f
           initialSpringVelocity:0.7f
                         options:UIViewAnimationOptionBeginFromCurrentState
                      animations:translateBlock
-                     completion:nil];
+                     completion:completionBlock];
 }
 
 - (void)rotateImageNinetyDegreesAnimated:(BOOL)animated
