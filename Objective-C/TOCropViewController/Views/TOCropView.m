@@ -693,6 +693,13 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     [self checkForCanReset];
 }
 
+- (BOOL)endEditing:(BOOL)force {
+    BOOL result = [super endEditing:force];
+    [self toggleTranslucencyViewVisible:YES];
+
+    return result;
+}
+
 - (void)resetLayoutToDefaultAnimated:(BOOL)animated
 {
     // If resetting the crop view includes resetting the aspect ratio,
